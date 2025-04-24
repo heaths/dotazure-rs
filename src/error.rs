@@ -82,9 +82,7 @@ impl Error {
         F: FnOnce() -> C,
         C: Into<Cow<'static, str>>,
     {
-        Self {
-            repr: Repr::SimpleMessage(kind, message().into()),
-        }
+        Self::with_message(kind, message())
     }
 
     #[must_use]
@@ -102,6 +100,16 @@ impl Error {
                 message.into(),
             ),
         }
+    }
+
+    #[must_use]
+    pub fn with_error_fn<E, F, C>(kind: ErrorKind, error: E, message: F) -> Self
+    where
+        E: Into<Box<dyn std::error::Error + Send + Sync>>,
+        F: FnOnce() -> C,
+        C: Into<Cow<'static, str>>,
+    {
+        Self::with_error(kind, error, message())
     }
 }
 
@@ -159,4 +167,51 @@ enum Repr {
 struct Custom {
     kind: ErrorKind,
     error: Box<dyn std::error::Error + Send + Sync>,
+}
+
+pub trait ResultExt<T>: private::Sealed {
+    fn with_kind(self, kind: ErrorKind) -> Result<T>;
+
+    fn with_context<C>(self, kind: ErrorKind, message: C) -> Result<T>
+    where
+        Self: Sized,
+        C: Into<Cow<'static, str>>;
+
+    fn with_context_fn<F, C>(self, kind: ErrorKind, f: F) -> Result<T>
+    where
+        Self: Sized,
+        F: FnOnce() -> C,
+        C: Into<Cow<'static, str>>;
+}
+
+impl<T, E> ResultExt<T> for std::result::Result<T, E>
+where
+    E: std::error::Error + Send + Sync + 'static,
+{
+    fn with_kind(self, kind: ErrorKind) -> Result<T> {
+        self.map_err(|err| Error::new(kind, err))
+    }
+
+    fn with_context<C>(self, kind: ErrorKind, message: C) -> Result<T>
+    where
+        Self: Sized,
+        C: Into<Cow<'static, str>>,
+    {
+        self.map_err(|err| Error::with_error(kind, Box::new(err), message))
+    }
+
+    fn with_context_fn<F, C>(self, kind: ErrorKind, f: F) -> Result<T>
+    where
+        Self: Sized,
+        F: FnOnce() -> C,
+        C: Into<Cow<'static, str>>,
+    {
+        self.with_context(kind, f())
+    }
+}
+
+mod private {
+    pub trait Sealed {}
+
+    impl<T, E> Sealed for std::result::Result<T, E> where E: std::error::Error + Send + Sync + 'static {}
 }
