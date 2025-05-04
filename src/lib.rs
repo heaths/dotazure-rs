@@ -1,60 +1,67 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
+#![doc = include_str!("../README.md")]
+
 mod context;
 pub mod error;
 
 pub use context::*;
 pub use error::{Error, Result};
 use error::{ErrorKind, ResultExt as _};
-use std::path::Path;
 
-pub trait Loader {
-    fn load(path: impl AsRef<Path>, replace: bool) -> Result<()>;
+/// Load environment variables for an Azure Developer CLI project.
+///
+/// Locates the `.env` file from the default environment name if an Azure Developer CLI project was already provisioned.
+/// Environment variables that were already set will not be replaced.
+///
+/// Call [`loader()`] to customize the behavior.
+pub fn load() -> Result<()> {
+    loader().load()
 }
 
-#[cfg(feature = "dotenvy")]
-pub fn load(replace: bool, context: Option<&AzdContext>) -> Result<()> {
-    load_with::<Dotenvy>(replace, context)
+/// Get a builder to customize discovery and loading of environment variables.
+pub fn loader() -> Loader {
+    Loader::default()
 }
 
-pub fn load_with<T: Loader>(replace: bool, context: Option<&AzdContext>) -> Result<()> {
-    let default_context;
-    let context = match context {
-        Some(context) => context,
-        None => {
-            default_context = AzdContext::builder().build()?;
-            &default_context
-        }
-    };
-
-    let environment_file = context.environment_file();
-    T::load(&environment_file, replace).with_context_fn(ErrorKind::Io, || {
-        format!(
-            "failed to load environment variables from '{}",
-            environment_file.display(),
-        )
-    })
+/// A builder interface to customize discovery and loading of environment variables.
+#[derive(Debug, Default)]
+pub struct Loader {
+    context: Option<AzdContext>,
+    replace: bool,
 }
 
-#[cfg(feature = "dotenvy")]
-mod dotenvy {
-    use crate::error::{ErrorKind, ResultExt as _};
-
-    #[derive(Debug)]
-    pub struct Dotenvy;
-
-    impl super::Loader for Dotenvy {
-        fn load(path: impl AsRef<std::path::Path>, replace: bool) -> crate::Result<()> {
-            if replace {
-                ::dotenvy::from_path_override(&path)
-            } else {
-                ::dotenvy::from_path(&path)
-            }
-            .with_kind(ErrorKind::Io)
+impl Loader {
+    /// Set the [`AzdContext`] to use for discovery.
+    pub fn context(self, context: AzdContext) -> Self {
+        Self {
+            context: Some(context),
+            ..self
         }
     }
-}
 
-#[cfg(feature = "dotenvy")]
-pub use dotenvy::Dotenvy;
+    /// Set whether to replace environment variables that were already set.
+    pub fn replace(self, replace: bool) -> Self {
+        Self { replace, ..self }
+    }
+
+    /// Finds and loads the appropriate `.env` file.
+    pub fn load(self) -> Result<()> {
+        let context = match self.context {
+            Some(context) => context,
+            None => AzdContext::builder().build()?,
+        };
+        let path = context.environment_file();
+        if self.replace {
+            dotenvy::from_filename_override(&path)
+        } else {
+            dotenvy::from_filename(&path)
+        }
+        .with_context_fn(ErrorKind::Io, || {
+            format!("failed to load {}", path.display())
+        })?;
+
+        Ok(())
+    }
+}

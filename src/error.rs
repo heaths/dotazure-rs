@@ -1,11 +1,13 @@
 // Copyright 2024 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
+//! Error handling for this crate.
 use std::{
     borrow::{Borrow, Cow},
     fmt,
 };
 
+/// A `Result` specific to this crate.
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -26,6 +28,7 @@ impl fmt::Display for ErrorKind {
     }
 }
 
+/// Error information for this crate.
 #[derive(Debug)]
 pub struct Error {
     repr: Repr,
@@ -65,6 +68,7 @@ impl Error {
         }
     }
 
+    /// Create an `Error` with a message.
     #[must_use]
     pub fn with_message<C>(kind: ErrorKind, message: C) -> Self
     where
@@ -75,6 +79,7 @@ impl Error {
         }
     }
 
+    /// Create an `Error` using a function to return a message.
     #[must_use]
     pub fn with_message_fn<F, C>(kind: ErrorKind, message: F) -> Self
     where
@@ -85,6 +90,7 @@ impl Error {
         Self::with_message(kind, message())
     }
 
+    /// Create an `Error` containing another error and a message.
     #[must_use]
     pub fn with_error<E, C>(kind: ErrorKind, error: E, message: C) -> Self
     where
@@ -102,6 +108,7 @@ impl Error {
         }
     }
 
+    /// Create an `Error` containing another error and using a function to return a message.
     #[must_use]
     pub fn with_error_fn<E, F, C>(kind: ErrorKind, error: E, message: F) -> Self
     where
@@ -169,14 +176,18 @@ struct Custom {
     error: Box<dyn std::error::Error + Send + Sync>,
 }
 
+/// Extension methods for [`std::result::Result`].
 pub trait ResultExt<T>: private::Sealed {
+    /// Create an [`Error`] containing another error with an [`ErrorKind`].
     fn with_kind(self, kind: ErrorKind) -> Result<T>;
 
+    /// Create an [`Error`] containing another error with an [`ErrorKind`] and message.
     fn with_context<C>(self, kind: ErrorKind, message: C) -> Result<T>
     where
         Self: Sized,
         C: Into<Cow<'static, str>>;
 
+    /// Create an [`Error`] containing another error with an [`ErrorKind`] and a function that returns a message.
     fn with_context_fn<F, C>(self, kind: ErrorKind, f: F) -> Result<T>
     where
         Self: Sized,

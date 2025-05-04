@@ -12,16 +12,17 @@
   "words": [
     "clippy",
     "dotazure",
-    "dotenvy",
     "repr",
     "rustlang",
-    "rustup",
-    "serde"
+    "rustup"
   ],
   "dictionaryDefinitions": [
     {
       "name": "crates",
-      "words": [],
+      "words": [
+        "dotenvy",
+        "serde"
+      ],
       "noSuggest": true
     }
   ],
@@ -35,6 +36,7 @@
     {
       "filename": "**/*.md",
       "dictionaries": [
+        "crates",
         "rust"
       ]
     },
