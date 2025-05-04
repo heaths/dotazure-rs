@@ -7,7 +7,7 @@ use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotazure::load(false, None)?;
+    dotazure::load()?;
 
     let endpoint = env::var("AZURE_KEYVAULT_URL")?;
     let credential = DefaultAzureCredential::new()?;
