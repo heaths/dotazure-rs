@@ -15,6 +15,7 @@ pub enum ErrorKind {
     InvalidData,
     Io,
     Other,
+    NotFound,
 }
 
 impl fmt::Display for ErrorKind {
@@ -24,6 +25,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::InvalidData => f.write_str("InvalidData"),
             ErrorKind::Io => f.write_str("Io"),
             ErrorKind::Other => f.write_str("Other"),
+            ErrorKind::NotFound => f.write_str("NotFound"),
         }
     }
 }
@@ -152,13 +154,25 @@ impl From<ErrorKind> for Error {
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
-        Self::new(ErrorKind::Io, error)
+        match error.kind() {
+            std::io::ErrorKind::NotFound => Self::new(ErrorKind::NotFound, error),
+            _ => Self::new(ErrorKind::Io, error),
+        }
     }
 }
 
 impl From<serde_json::Error> for Error {
     fn from(error: serde_json::Error) -> Self {
         Self::new(ErrorKind::InvalidData, error)
+    }
+}
+
+impl From<dotenvy::Error> for Error {
+    fn from(error: dotenvy::Error) -> Self {
+        if error.not_found() {
+            return Self::new(ErrorKind::NotFound, error);
+        }
+        Self::new(ErrorKind::Io, error)
     }
 }
 

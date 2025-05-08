@@ -7,16 +7,19 @@ mod context;
 pub mod error;
 
 pub use context::*;
+use error::ErrorKind;
 pub use error::{Error, Result};
-use error::{ErrorKind, ResultExt as _};
 
 /// Load environment variables for an Azure Developer CLI project.
 ///
 /// Locates the `.env` file from the default environment name if an Azure Developer CLI project was already provisioned.
+/// Returns `true` if the `.env` file was found and loaded successfully or `false` if no `.env` file was found.
+/// Any errors navigating directories, or reading or parsing files will return an error.
+///
 /// Environment variables that were already set will not be replaced.
 ///
 /// Call [`loader()`] to customize the behavior.
-pub fn load() -> Result<()> {
+pub fn load() -> Result<bool> {
     loader().load()
 }
 
@@ -47,21 +50,31 @@ impl Loader {
     }
 
     /// Finds and loads the appropriate `.env` file.
-    pub fn load(self) -> Result<()> {
-        let context = match self.context {
-            Some(context) => context,
-            None => AzdContext::builder().build()?,
+    ///
+    /// Returns `true` if the `.env` file was found and loaded successfully or `false` if no `.env` file was found.
+    /// Any errors navigating directories, or reading or parsing files will return an error.
+    pub fn load(self) -> Result<bool> {
+        let context = if let Some(context) = self.context {
+            context
+        } else {
+            match AzdContext::builder().build() {
+                Ok(context) => context,
+                Err(err) if *err.kind() == ErrorKind::NotFound => return Ok(false),
+                Err(err) => return Err(err),
+            }
         };
+
         let path = context.environment_file();
-        if self.replace {
+        match if self.replace {
             dotenvy::from_filename_override(&path)
         } else {
             dotenvy::from_filename(&path)
         }
-        .with_context_fn(ErrorKind::Io, || {
-            format!("failed to load {}", path.display())
-        })?;
-
-        Ok(())
+        .map_err(Into::<Error>::into)
+        {
+            Ok(_) => Ok(true),
+            Err(err) if *err.kind() == ErrorKind::NotFound => Ok(false),
+            Err(err) => Err(err),
+        }
     }
 }
