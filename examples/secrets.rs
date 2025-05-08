@@ -3,13 +3,19 @@
 
 use azure_identity::DefaultAzureCredential;
 use azure_security_keyvault_secrets::SecretClient;
+use dotazure::error::{ErrorKind, ResultExt};
 use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotazure::load()?;
+    const ENV_VAR_NAME: &str = "AZURE_KEYVAULT_URL";
 
-    let endpoint = env::var("AZURE_KEYVAULT_URL")?;
+    if dotazure::load()? {
+        eprintln!("loaded environment variables");
+    }
+
+    let endpoint = env::var(ENV_VAR_NAME)
+        .with_context_fn(ErrorKind::NotFound, || format!("{ENV_VAR_NAME} not set"))?;
     let credential = DefaultAzureCredential::new()?;
     let client = SecretClient::new(&endpoint, credential.clone(), None)?;
 

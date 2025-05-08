@@ -74,7 +74,7 @@ impl AzdContextBuilder {
         let current_dir: PathBuf = path.into();
         if !current_dir.exists() {
             return Err(Error::new(
-                ErrorKind::Io,
+                ErrorKind::NotFound,
                 format!("{} does not exist", current_dir.display()),
             ));
         }
@@ -119,7 +119,7 @@ impl AzdContextBuilder {
 
         let Some(project_dir) = project_dir.map(Into::<PathBuf>::into) else {
             return Err(Error::new(
-                ErrorKind::Io,
+                ErrorKind::NotFound,
                 "no project exists; to create a new project, run `azd init`",
             ));
         };
@@ -135,7 +135,7 @@ impl AzdContextBuilder {
 
                 config.default_environment.ok_or_else(|| {
                     Error::new(
-                        ErrorKind::InvalidData,
+                        ErrorKind::NotFound,
                         format!("'{}' does not define `defaultEnvironment`", path.display()),
                     )
                 })?
