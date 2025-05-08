@@ -1,6 +1,6 @@
 [package]
 name = "dotazure"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Locate and load environment variables defined when provisioning an Azure Developer CLI project."
 repository = "https://github.com/heaths/dotazure-rs"

@@ -297,7 +297,7 @@ dependencies = [
 
 [[package]]
 name = "dotazure"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "azure_identity",
  "azure_security_keyvault_secrets",
