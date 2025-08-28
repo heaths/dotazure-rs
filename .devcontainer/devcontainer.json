@@ -1,9 +1,10 @@
 {
-  "name": "ordinal-rs",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "name": "dotazure-rs",
+  "image": "mcr.microsoft.com/devcontainers/rust:1-bullseye",
   "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "installBicep": true
+    },
     "ghcr.io/azure/azure-dev/azd:latest": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
@@ -11,6 +12,7 @@
     "vscode": {
       "extensions": [
         "editorconfig.editorconfig",
+        "ms-azuretools.azure-dev",
         "rust-lang.rust-analyzer",
         "streetsidesoftware.code-spell-checker",
         "tamasfe.even-better-toml",
@@ -18,5 +20,5 @@
       ]
     }
   },
-  "onCreateCommand": "rustup show"
+  "onCreateCommand": "rustup install"
 }
