@@ -8,10 +8,16 @@ Locate and load environment variables defined when provisioning an [Azure Develo
 
 ## Getting Started
 
-If you do not already have an [Azure Developer CLI] (azd) project, you can create one:
+If you do not already have an [Azure Developer CLI](azd) project, you can create one:
 
 ```sh
 azd init
+```
+
+Add [`dotazure`](https://crates.io/crates/dotazure) to your project:
+
+```sh
+cargo add dotazure
 ```
 
 After you define some resources e.g., an [Azure Key Vault](https://github.com/heaths/dotazure-rs/blob/main/infra/resources.bicep),
